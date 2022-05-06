@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  Animated,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -18,10 +19,12 @@ import axios from "axios"
 export default function App() {
   const [currentIndex, setCurrentIndex] = React.useState(null);
   const [radios, setRadios] = useState([])
+  // fadeAnim will be used as the value for opacity. Initial Value: 0
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
   const getStations = async () => {
     try {
       const resp = await axios.get('https://jobapi.teclead-ventures.de/recruiting/radios');
-      console.log(resp.data.radios);
       setRadios(resp.data.radios)
 
     } catch (err) {
@@ -34,14 +37,38 @@ export default function App() {
     } else {
       setCurrentIndex(0);
     }
+    fadeIn()
   }
+
   const setPrevious = () => {
     if (!(currentIndex - 1 < 0)) {
       setCurrentIndex((prevIndex) => prevIndex - 1);
     } else {
       setCurrentIndex(radios.length - 1);
     }
+    fadeIn()
   }
+
+
+
+  const fadeIn = () => {
+    // Will change fadeAnim value to 1 in 5 seconds
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true
+    }).start();
+  };
+
+  const fadeOutNext = () => {
+    // Will change fadeAnim value to 0 in 3 seconds
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true
+    }).start(setNext);
+  };
+
   useEffect(() => {
     getStations()
   }, [])
@@ -71,7 +98,15 @@ export default function App() {
             <TouchableOpacity
               key={name}
               onPress={() => {
-                setCurrentIndex(index === currentIndex ? null : index);
+                Animated.timing(fadeAnim, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true
+                }).start(()=>{
+                  setCurrentIndex(index === currentIndex ? null : index);
+                  fadeIn();
+                });
+                
               }}
               activeOpacity={0.9}
             >
@@ -82,10 +117,16 @@ export default function App() {
 
                 </View>
                 {index === currentIndex && (
-                  <View style={styles.listItemSubCategoryMain}>
+                  <Animated.View style={{...styles.listItemSubCategoryMain, opacity: fadeAnim}}>
 
                     <TouchableOpacity
-                      onPress={setPrevious}
+                      onPress={()=> {
+                        Animated.timing(fadeAnim, {
+                          toValue: 0,
+                          duration: 200,
+                          useNativeDriver: true
+                        }).start(setPrevious);
+                      }}
                     >
                       <AntDesign name="minuscircleo" size={40} color="#9AA1B0" />
                     </TouchableOpacity>
@@ -98,11 +139,17 @@ export default function App() {
                     />
 
                     <TouchableOpacity
-                      onPress={setNext}
+                      onPress={()=> {
+                        Animated.timing(fadeAnim, {
+                          toValue: 0,
+                          duration: 200,
+                          useNativeDriver: true
+                        }).start(setNext);
+                      }}
                     >
                       <AntDesign name="pluscircleo" size={40} color="#9AA1B0" />
                     </TouchableOpacity>
-                  </View>
+                  </Animated.View>
                 )}
               </View>
             </TouchableOpacity>
